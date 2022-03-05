@@ -34,7 +34,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({
             value={value as Expense[keyof Omit<Expense, 'transactionDay'>]}
             onChange={handleChange}
             onKeyPress={(e) => e.key === 'Enter' && handleSave()}
-            onBlur={handleSave}
             className="w-4/5 outline-none border-b border-gray-300 py-1 md:py-2"
           />
         ) : (

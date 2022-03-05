@@ -11,6 +11,10 @@ export const useExpenseById = (expenseId: string) => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user) {
+        return;
+      }
+
       const expense = await getExpenseById(user!.id, expenseId);
 
       if (!expense) {

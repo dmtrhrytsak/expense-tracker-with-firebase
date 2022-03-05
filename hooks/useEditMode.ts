@@ -7,12 +7,7 @@ const useEditMode = () => {
     setEditMode(!editMode);
   };
 
-  const handleSave = (onSave: (newValue: string) => void, newValue: string) => {
-    onSave(newValue);
-    toggleEditMode();
-  };
-
-  return { editMode, toggleEditMode, handleSave };
+  return { editMode, toggleEditMode };
 };
 
 export default useEditMode;
