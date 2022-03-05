@@ -1,3 +1,5 @@
+import classNames from 'classnames';
+
 type BudgetRemainingProps = {
   totalBudget: number;
   expenses: number;
@@ -11,7 +13,13 @@ const BudgetRemaining: React.FC<BudgetRemainingProps> = ({
 
   return (
     <article className="budget-info border-t-teal-500">
-      <h3 className="text-xl font-semibold">$ {remainingBudget}</h3>
+      <h3
+        className={classNames('text-xl font-semibold', {
+          'text-red-500': remainingBudget < 0,
+        })}
+      >
+        $ {remainingBudget}
+      </h3>
       <p className="text-sm text-zinc-500">Remaining</p>
     </article>
   );

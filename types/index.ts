@@ -1,3 +1,4 @@
 import type Expense from './Expense';
+import type User from './User';
 
-export { Expense };
+export { Expense, User };

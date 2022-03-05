@@ -12,14 +12,14 @@ import {
 
 import { db } from '../../services/firestore/firestore.config';
 import { RootState } from '../rootReducer';
-import { Expense } from '../../types';
-
-const expensesCollectionRef = collection(db, 'expenses');
+import { Expense, User } from '../../types';
 
 export const getAllExpenses = createAsyncThunk(
   'expenses/getAllExpenses',
-  async (_, { rejectWithValue }) => {
+  async ({ userId }: { userId: User['id'] }, { dispatch, rejectWithValue }) => {
     try {
+      const expensesCollectionRef = collection(db, 'users', userId, 'expenses');
+
       const expensesQuery = query(
         expensesCollectionRef,
         orderBy('transactionDay', 'desc')
@@ -37,7 +37,9 @@ export const getAllExpenses = createAsyncThunk(
         };
 
         return expense;
-      });
+      }) as Expense[];
+
+      dispatch(calculateTotalSpent(expenses));
 
       return expenses;
     } catch (error: any) {
@@ -48,8 +50,13 @@ export const getAllExpenses = createAsyncThunk(
 
 export const addExpense = createAsyncThunk(
   'expenses/addExpense',
-  async (expense: Expense, { rejectWithValue }) => {
+  async (
+    { userId, expense }: { userId: User['id']; expense: Expense },
+    { rejectWithValue }
+  ) => {
     try {
+      const expensesCollectionRef = collection(db, 'users', userId, 'expenses');
+
       await addDoc(expensesCollectionRef, expense);
     } catch (error: any) {
       return rejectWithValue({ error: error.message });
@@ -61,10 +68,12 @@ export const editExpense = createAsyncThunk(
   'expenses/editExpense',
   async (
     {
+      userId,
       expenseId,
       field,
       newValue,
     }: {
+      userId: User['id'];
       expenseId: Expense['id'];
       field: keyof Expense;
       newValue: Expense[keyof Expense];
@@ -72,7 +81,7 @@ export const editExpense = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const expenseRef = doc(db, 'expenses', expenseId);
+      const expenseRef = doc(db, 'users', userId, 'expenses', expenseId);
 
       await updateDoc(expenseRef, {
         [field]: newValue,
@@ -85,9 +94,12 @@ export const editExpense = createAsyncThunk(
 
 export const deleteExpense = createAsyncThunk(
   'expenses/deleteExpense',
-  async (expenseId: Expense['id'], { rejectWithValue }) => {
+  async (
+    { userId, expenseId }: { userId: User['id']; expenseId: Expense['id'] },
+    { rejectWithValue }
+  ) => {
     try {
-      const expenseRef = doc(db, 'expenses', expenseId);
+      const expenseRef = doc(db, 'users', userId, 'expenses', expenseId);
 
       await deleteDoc(expenseRef);
     } catch (error: any) {
@@ -98,11 +110,13 @@ export const deleteExpense = createAsyncThunk(
 
 type ExpensesState = {
   expenses: Expense[] | null;
+  totalSpent: number;
   error: string | null;
 };
 
 const initialState: ExpensesState = {
   expenses: null,
+  totalSpent: 0,
   error: null,
 };
 
@@ -116,7 +130,17 @@ const rejectedReducer = (
 const expensesSlice = createSlice({
   name: 'expenses',
   initialState,
-  reducers: {},
+  reducers: {
+    calculateTotalSpent: (
+      state: ExpensesState,
+      { payload }: PayloadAction<Expense[]>
+    ) => {
+      state.totalSpent = payload.reduce(
+        (total, expense) => total + expense.amount,
+        0
+      );
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(
@@ -131,6 +155,9 @@ const expensesSlice = createSlice({
   },
 });
 
+export const { calculateTotalSpent } = expensesSlice.actions;
+
 export const selectExpenses = (state: RootState) => state.expenses;
+export const selectTotalSpent = (state: RootState) => state.expenses.totalSpent;
 
 export default expensesSlice.reducer;

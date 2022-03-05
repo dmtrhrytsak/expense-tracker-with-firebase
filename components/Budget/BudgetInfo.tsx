@@ -1,8 +1,32 @@
+import { useEffect } from 'react';
+
+import { useAppDispatch, useAppSelector } from '../../store/rootReducer';
+import { getBalance, depositBalance } from '../../store/features/balance.slice';
+import { selectTotalSpent } from '../../store/features/expenses.slice';
+import { useAuthContext } from '../../contexts/authContext';
+import parseAmount from '../../utils/parseAmount';
 import { BudgetRemaining, BudgetSpent, BudgetTotal } from '.';
 
 const BudgetInfo = () => {
-  const totalBudget = 138.3;
-  const expenses = 50.2;
+  const { user } = useAuthContext();
+
+  const { balance } = useAppSelector((state) => state.balance);
+  const totalSpent = useAppSelector(selectTotalSpent);
+  const dispatch = useAppDispatch();
+
+  const handleBudgetUpdate = (newBudget: string) => {
+    if (!newBudget) {
+      return;
+    }
+
+    dispatch(
+      depositBalance({ userId: user!.id, newAmount: parseAmount(newBudget) })
+    );
+  };
+
+  useEffect(() => {
+    dispatch(getBalance({ userId: user!.id }));
+  }, [dispatch, user]);
 
   return (
     <section className="mb-8">
@@ -12,9 +36,9 @@ const BudgetInfo = () => {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <BudgetTotal amount={totalBudget} />
-        <BudgetRemaining totalBudget={totalBudget} expenses={expenses} />
-        <BudgetSpent expenses={expenses} />
+        <BudgetTotal budgetTotal={balance} onDeposit={handleBudgetUpdate} />
+        <BudgetRemaining totalBudget={balance} expenses={totalSpent} />
+        <BudgetSpent expenses={totalSpent} />
       </div>
     </section>
   );

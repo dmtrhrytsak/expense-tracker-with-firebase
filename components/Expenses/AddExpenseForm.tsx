@@ -1,17 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
+
+import useAmountInput from '../../hooks/useAmountInput';
+import useNameInput from '../../hooks/useNameInput';
+import parseAmount from '../../utils/parseAmount';
 import { Expense } from '../../types';
-
-export const LEN_LIMIT = 45;
-
-export const validateExpenseAmount = (expenseAmount: string) => {
-  const numberRegExp = /^([0-9]{1,})?(\.)?([0-9]{1,})?$/;
-
-  if (!numberRegExp.test(expenseAmount) || expenseAmount.length > 8) {
-    return false;
-  }
-
-  return true;
-};
 
 type AddExpenseFromProps = {
   onSubmit: (
@@ -21,38 +13,18 @@ type AddExpenseFromProps = {
 };
 
 const AddExpenseForm: React.FC<AddExpenseFromProps> = ({ onSubmit }) => {
-  const [expenseName, setExpenseName] = useState('');
-  const [expenseAmount, setExpenseAmount] = useState('');
+  const { name, handleNameChange } = useNameInput();
+  const { amount, handleAmountChange } = useAmountInput();
   const submitBtnRef = useRef<HTMLButtonElement | null>(null);
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-
-    if (value.length > LEN_LIMIT) {
-      return;
-    }
-
-    setExpenseName(value);
-  };
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-
-    if (!validateExpenseAmount(value)) {
-      return;
-    }
-
-    setExpenseAmount(value);
-  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!expenseName.trim() || !expenseAmount) {
+    if (!name.trim() || !amount) {
       return;
     }
 
-    onSubmit(expenseName.trim(), parseFloat(expenseAmount));
+    onSubmit(name.trim(), parseAmount(amount));
   };
 
   return (
@@ -63,8 +35,7 @@ const AddExpenseForm: React.FC<AddExpenseFromProps> = ({ onSubmit }) => {
           <input
             type="text"
             id="amount"
-            name="amount"
-            value={expenseAmount}
+            value={amount}
             placeholder="0"
             onChange={handleAmountChange}
             className="w-full p-4 border-b-2 border-black bg-transparent text-4xl outline-none placeholder:text-zinc-500"
@@ -82,7 +53,7 @@ const AddExpenseForm: React.FC<AddExpenseFromProps> = ({ onSubmit }) => {
         <input
           type="text"
           id="name"
-          value={expenseName}
+          value={name}
           placeholder="Expense name"
           onChange={handleNameChange}
           onKeyPress={(e) => e.key === 'Enter' && submitBtnRef.current?.click()}

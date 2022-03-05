@@ -1,43 +1,28 @@
 import { useState } from 'react';
+import useEditMode from '../../hooks/useEditMode';
 
-import { validateExpenseAmount } from './AddExpenseForm';
 import { Expense } from '../../types';
 
 type ExpenseItemProps = {
   title: string;
   value: Expense[keyof Expense];
-  tag: keyof Expense;
   isEditable?: boolean;
-  onSave: (field: keyof Expense, newValue: Expense[keyof Expense]) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSave: (newValue: string) => void;
 };
 
 const ExpenseItem: React.FC<ExpenseItemProps> = ({
   title,
   value,
-  tag,
   isEditable,
+  handleChange,
   onSave,
 }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [tempValue, setTempValue] = useState(value);
-
-  const toggleEditMode = () => {
-    setEditMode(!editMode);
-  };
+  const { editMode, toggleEditMode } = useEditMode();
 
   const handleSave = () => {
-    onSave(tag, tempValue);
+    onSave(value as string);
     toggleEditMode();
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-
-    if (tag === 'amount' && !validateExpenseAmount(value)) {
-      return;
-    }
-
-    setTempValue(e.target.value);
   };
 
   return (
@@ -46,18 +31,14 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({
         <span className="font-semibold text-zinc-500">{title}</span>
         {editMode ? (
           <input
-            value={tempValue as Expense[keyof Omit<Expense, 'transactionDay'>]}
+            value={value as Expense[keyof Omit<Expense, 'transactionDay'>]}
             onChange={handleChange}
             onKeyPress={(e) => e.key === 'Enter' && handleSave()}
             onBlur={handleSave}
             className="w-4/5 outline-none border-b border-gray-300 py-1 md:py-2"
           />
         ) : (
-          <p className="border-b border-transparent py-1 md:py-2">
-            {typeof tempValue === 'number'
-              ? `$${tempValue.toFixed(2)}`
-              : `${tempValue}`}
-          </p>
+          <p className="border-b border-transparent py-1 md:py-2">{value}</p>
         )}
       </div>
 

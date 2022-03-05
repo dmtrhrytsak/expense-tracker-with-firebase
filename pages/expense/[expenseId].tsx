@@ -1,90 +1,48 @@
 import type { NextPage } from 'next';
-import type { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
-import { doc, getDoc } from 'firebase/firestore';
 
-import { db } from '../../services/firestore/firestore.config';
 import { useAppDispatch } from '../../store/rootReducer';
-import {
-  deleteExpense,
-  editExpense,
-} from '../../store/features/expenses.slice';
-import { DeleteExepenseButton, ExpenseItem } from '../../components/Expenses';
-import { Expense } from '../../types';
+import { deleteExpense } from '../../store/features/expenses.slice';
+import { useAuthContext } from '../../contexts/authContext';
+import { DeleteExepenseButton, ExpenseInfo } from '../../components/Expenses';
+import { useExpenseById } from '../../hooks/useExpenseById';
+import { PageLoader } from '../../components/Loaders';
+import { ProtectedRoute } from '../../components/Routes';
+import Head from 'next/head';
 
-type ExpenseProps = {
-  expense: Expense;
-};
-
-const ExpensePage: NextPage<ExpenseProps> = ({ expense }) => {
-  const dispatch = useAppDispatch();
+const ExpensePage: NextPage = () => {
   const router = useRouter();
+  const { expenseId } = router.query;
 
-  const onSave = (field: keyof Expense, newValue: Expense[keyof Expense]) => {
-    dispatch(editExpense({ expenseId: expense.id, field, newValue }));
-  };
+  const { expense, notFound } = useExpenseById(expenseId as string);
+  const { user } = useAuthContext();
+  const dispatch = useAppDispatch();
+
+  if (!expense && !notFound) {
+    return <PageLoader />;
+  }
+
+  if (notFound) {
+    router.replace('/');
+  }
 
   const onDelete = async () => {
-    await dispatch(deleteExpense(expense.id));
+    await dispatch(deleteExpense({ userId: user!.id, expenseId: expense!.id }));
 
     router.push('/');
   };
 
   return (
-    <section>
-      <ExpenseItem
-        title="Name"
-        value={expense.name}
-        tag="name"
-        onSave={onSave}
-        isEditable
-      />
-      <ExpenseItem
-        title="Amount"
-        value={expense.amount}
-        tag="amount"
-        onSave={onSave}
-      />
-      <ExpenseItem
-        title="Date"
-        value={expense.transactionDay}
-        onSave={onSave}
-        tag="transactionDay"
-      />
-
-      <DeleteExepenseButton onClick={onDelete} />
-    </section>
+    <ProtectedRoute>
+      <Head>
+        <title>Expense Info | Expense Tracker</title>
+      </Head>
+      <section>
+        <ExpenseInfo expense={expense!} />
+        <DeleteExepenseButton onClick={onDelete} />
+      </section>
+    </ProtectedRoute>
   );
-};
-
-export const getServerSideProps: GetServerSideProps<ExpenseProps> = async (
-  context
-) => {
-  const { expenseId } = context.params!;
-
-  const expenseSnapshot = await getDoc(
-    doc(db, 'expenses', expenseId as string)
-  );
-
-  if (!expenseSnapshot.exists()) {
-    return {
-      notFound: true,
-    };
-  }
-
-  const expenseData = expenseSnapshot.data();
-
-  const expense = {
-    id: expenseSnapshot.id,
-    ...expenseData,
-    transactionDay: expenseData.transactionDay.toDate().toLocaleDateString(),
-  } as Expense;
-
-  return {
-    props: {
-      expense,
-    },
-  };
 };
 
 export default ExpensePage;
