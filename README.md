@@ -15,6 +15,7 @@ Expense Tracker app created with Next.js and using firebase (Firestore Database 
 Project is created with:
 * Next.js
 * React
+* Redux/Redux Toolkit
 * TypeScript
 * Firebase
 * Tailwind CSS
